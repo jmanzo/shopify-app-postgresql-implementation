@@ -14,6 +14,7 @@ import { BillingInterval } from "./helpers/ensure-billing.js";
 import { AppInstallations } from "./app_installations.js";
 
 import applyQrCodeApiEndpoints from "./middleware/qr-code-api.js";
+import applyQrCodePublicEndpoints from "./middleware/qr-code-public.js";
 import { QRCodesDB } from "./qr-codes-db.js";
 
 const USE_ONLINE_TOKENS = false;
@@ -81,6 +82,8 @@ export async function createServer(
   applyAuthMiddleware(app, {
     billing: billingSettings,
   });
+
+  applyQrCodePublicEndpoints(app);
 
   // Do not call app.use(express.json()) before processing webhooks with
   // Shopify.Webhooks.Registry.process().
