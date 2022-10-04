@@ -122,7 +122,7 @@ export function QRCodeForm({ QRCode: InitialQRCode }) {
      * 
      * Finally, closes the ResourcePicker.
      */
-    const handleProductChange = ueCallback(
+    const handleProductChange = useCallback(
         ({ selection }) => {
             setSelectedProduct({
                 title: selection[0].title,
@@ -267,7 +267,7 @@ export function QRCodeForm({ QRCode: InitialQRCode }) {
                                     )}
                                     {productId.value ? (
                                         <Stack alignment="center">
-                                            {imageSrc || originalSrc ? (
+                                            {imageSrc || originalImageSrc ? (
                                                 <Thumbnail 
                                                     source={imageSrc || originalImageSrc}
                                                     alt={altText}
