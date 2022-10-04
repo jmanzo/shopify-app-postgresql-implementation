@@ -2,21 +2,29 @@ import { Card, Page, Layout, SkeletonBodyText } from "@shopify/polaris";
 import { Loading, TitleBar } from "@shopify/app-bridge-react";
 import { QRCodeForm } from "../../components";
 
+import { useParams } from "react-router-dom";
+import { useAppQuery } from "../../hooks";
+
 export default function QRCodeEdit() {
     const breadcrumbs = [{ content: "QR codes", url: "/" }];
+    const { id } = useParams();
 
-    /**
-     * These are mock values.
-     * Set isLoading to false to preview the page without loading markup.
+    /*
+    Fetch the QR code.
+    useAppQuery uses useAuthenticatedQuery from App Bridge to authenticate the request.
+    The backend supplements app data with data queried from the Shopify GraphQL Admin API.
     */
-    const isLoading = false;
-    const isRefetching = false;
-    const QRCode = {
-        createdAt: "2022-06-13",
-        destination: "checkout",
-        title: "My first QR code",
-        product: {}
-    };
+    const {
+        data: QRCode,
+        isLoading,
+        isRefetching,
+    } = useAppQuery({
+        url: `/api/qrcodes/${id}`,
+        reactQueryOptions: {
+            /* Disable refetching because the QRCodeForm component ignores changes to its props */
+            refetchOnReconnect: false,
+        },
+    });
 
     /* Loading action and markup that uses App Bridge and Polaris components */
     if (isLoading || isRefetching) {
