@@ -46,13 +46,13 @@ export function QRCodeForm({ QRCode: InitialQRCode }) {
     const [QRCode, setQRCode] = useState(InitialQRCode);
     const [showResourcePicker, setShowResourcePicker] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(QRCode?.product);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const navigate = useNavigate();
     const appBridge = useAppBridge();
     const fetch = useAuthenticatedFetch();
 
     const deletedProduct = QRCode?.product?.title === "Deleted product";
-    const isDeleting = false;
 
     const onSubmit = useCallback(
         (body) => {
@@ -89,7 +89,7 @@ export function QRCodeForm({ QRCode: InitialQRCode }) {
                     }
                 }
             })();
-            
+
             return { status: "success" };
         },
         [QRCode, setQRCode]
@@ -195,9 +195,20 @@ export function QRCodeForm({ QRCode: InitialQRCode }) {
         [showResourcePicker]
     );
 
-    const deleteQRCode = useCallback(
-        () => console.log("delete"), []
-    );
+    const deleteQRCode = useCallback(async () => {
+        reset();
+        /* The isDeleting state disables the download button and the delete QR code button to show the merchant that an action is in progress */
+        setIsDeleting(true);
+
+        const response = await fetch(`/api/qrcodes/${QRCode.id}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+        });
+      
+        if (response.ok) {
+            navigate(`/`);
+        }
+    }, [QRCode]);
 
     /**
      * This function runs when an user clicks the "Go to destination" button.
