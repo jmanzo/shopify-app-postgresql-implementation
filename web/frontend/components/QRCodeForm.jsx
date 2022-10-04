@@ -55,8 +55,45 @@ export function QRCodeForm({ QRCode: InitialQRCode }) {
     const isDeleting = false;
 
     const onSubmit = useCallback(
-        (body) => console.log(body), []
-    );
+        (body) => {
+            (async () => {
+                const parsedBody = body;
+                const QRCodeId = QRCode?.id;
+                /* construct the appropriate URL to send the API request to based on whether the QR code is new or being updated */
+                const url = QRCodeId ? `/api/qrcodes/${QRCodeId}` : "/api/qrcodes";
+                /* a condition to select the appropriate HTTP method: PATCH to update a QR code or POST to create a new QR code */
+                const method = QRCodeId ? "PATCH" : "POST";
+                
+                parsedBody.destination = parsedBody.destination[0];
+                
+                /**
+                 * use (authenticated) fetch from App Bridge to send the request to the API and, 
+                 * if successful, clear the form to reset the ContextualSaveBar and parse the response JSON.
+                 */
+                const response = await fetch(url, {
+                    method,
+                    body: JSON.stringify(parsedBody),
+                    headers: { "Content-Type": "application/json" },
+                });
+                
+                if (response.ok) {
+                    makeClean();
+
+                    const QRCode = await response.json();
+                    /* if this is a new QR code, then save the QR code and navigate to the edit page; this behavior is the standard when saving resources in the Shopify admin */
+                    if (!QRCodeId) {
+                        navigate(`/qrcodes/${QRCode.id}`);
+                        /* if this is a QR code update, update the QR code state in this component */
+                    } else {
+                        setQRCode(QRCode);
+                    }
+                }
+            })();
+            
+            return { status: "success" };
+        },
+        [QRCode, setQRCode]
+    );      
 
     /**
      * Sets up the form state with the useForm hook.
