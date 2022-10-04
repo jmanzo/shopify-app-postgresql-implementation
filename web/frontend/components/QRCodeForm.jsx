@@ -235,11 +235,31 @@ export function QRCodeForm({ QRCode: InitialQRCode }) {
         }, [QRCode, selectedProduct, destination, discountCode, handle, variantId]
     );
 
+    const {
+        data: discounts,
+        isLoading: isLoadingDiscounts,
+        isError: discountsError,
+        /* useAppQuery makes a query to `/api/discounts`, which the backend authenticates before fetching the data from the Shopify GraphQL Admin API */
+    } = useAppQuery({ url: "/api/discounts" });
+      
     /**
-     * This array is used in a select field in the form to manage discount options.
+     * This array is used in a select field in the form to manage discount options
      */
-    const isLoadingDiscounts = true;
-    const discountOptions = [NO_DISCOUNT_OPTION];
+    const discountOptions = discounts
+        ? [
+            NO_DISCOUNT_OPTION,
+            ...discounts.codeDiscountNodes.edges.map(
+                ({ node: { id, codeDiscount } }) => {
+                    DISCOUNT_CODES[id] = codeDiscount.codes.edges[0].node.code;
+        
+                    return {
+                        label: codeDiscount.codes.edges[0].node.code,
+                        value: id,
+                    };
+                }
+            ),
+          ]
+        : [];      
 
     /**
      * These variables are used to display product images, and will be populated when
