@@ -1,8 +1,6 @@
-# Duilo QR Codes - Opensource Testing Version
+# Shopify App PostgreSQL Implementation
 
-This is an app I created following the next tutorial available in [Shopify app](https://shopify.dev/apps/getting-started) using Node and React (also Vite, even though is not mentioned here). It contains the basics for building a Shopify app with database and backend steps to completed.
-
-This app allows to the merchants to create QR Codes and assign them to products and discounts quickly and easy. After a QR Code is created, the merchant can send the image with the QR to their customers so they can scan and purchase special promos and discounts.
+This is an app example I created to document the way that I used to implement the PostgreSQL database for my apps, following the [list of Repos available on this link](https://github.com/Shopify/shopify-api-node/tree/main/src/auth/session/storage). After a lot of time reading code and trying to get my head up to this, I figured it out and I'll be sharing with you how to do it. Also, [here](https://jdevm.com) you can see the same implementation using the other examples available there, and of course a step-by-step guide (just Spanish so far).
 
 ## Tech Stack
 - [Vite](https://vitejs.dev/): Which is a build tool that aims to provide a faster and leaner development experience for modern web projects. Note: I really loved working with this framework, or so. It's so clean and the speed is more than acceptable.
@@ -17,6 +15,7 @@ This app allows to the merchants to create QR Codes and assign them to products 
 - [Polaris React](https://polaris.shopify.com/) is a powerful design system and component library that helps developers build high quality, consistent experiences for Shopify merchants.
 - [Custom hooks](https://github.com/Shopify/shopify-frontend-template-react/tree/main/hooks) make authenticated requests to the Admin API.
 - [File-based routing](https://github.com/Shopify/shopify-frontend-template-react/blob/main/Routes.jsx) makes creating new pages easier.
+- [ElephantSQL](https://www.elephantsql.com/): Amazing tool that provides access to a FREE PostgreSQL instance to develop, experiment and build stuff without limitations. I loved when Heroku allowed this BTW, but let's get over of this.
 
 ## Getting started
 
@@ -32,6 +31,7 @@ To install and play with the app, just clone this repo and run `npm run dev`. Fo
 
 ## Developer resources
 
+- [Database Connection's Examples](https://github.com/Shopify/shopify-api-node/tree/main/src/auth/session/storage): Provided by Shopify to teach you how to implement this, but without any clarity about specific cases.
 - [Introduction to Shopify apps](https://shopify.dev/apps/getting-started)
 - [App authentication](https://shopify.dev/apps/auth)
 - [Shopify CLI](https://shopify.dev/apps/tools/cli)
