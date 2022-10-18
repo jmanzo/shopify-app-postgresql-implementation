@@ -8,9 +8,7 @@ import { Shopify, LATEST_API_VERSION } from "@shopify/shopify-api";
 import applyAuthMiddleware from "./middleware/auth.js";
 import verifyRequest from "./middleware/verify-request.js";
 import { setupGDPRWebHooks } from "./gdpr.js";
-import productCreator from "./helpers/product-creator.js";
 import redirectToAuth from "./helpers/redirect-to-auth.js";
-import { BillingInterval } from "./helpers/ensure-billing.js";
 import { AppInstallations } from "./app_installations.js";
 
 import applyQrCodeApiEndpoints from "./middleware/qr-code-api.js";
@@ -25,10 +23,14 @@ const PORT = parseInt(process.env.BACKEND_PORT || process.env.PORT, 10);
 const DEV_INDEX_PATH = `${process.cwd()}/frontend/`;
 const PROD_INDEX_PATH = `${process.cwd()}/frontend/dist/`;
 
-const dbFile = join(process.cwd(), "database.sqlite");
-const sessionDb = new Shopify.Session.SQLiteSessionStorage(dbFile);
+const sessionDb = new Shopify.Session.PostgreSQLSessionStorage.withCredentials(
+  process.env.PG_HOST,
+  process.env.PG_DB,
+  process.env.PG_USER,
+  process.env.PG_PASSWORD
+);
 // Initialize SQLite DB
-QRCodesDB.db = sessionDb.db;
+QRCodesDB.client = sessionDb.client;
 QRCodesDB.init();
 
 Shopify.Context.initialize({
