@@ -1,16 +1,11 @@
 /*
   This file interacts with the app's database and is used by the app's REST APIs.
 */
-import sqlite3 from "sqlite3";
-import path from "path";
-import { Shopify } from "@shopify/shopify-api";
-
-const DEFAULT_DB_FILE = path.join(process.cwd(), "qr_codes_db.sqlite");
-const DEFAULT_PURCHASE_QUANTITY = 1;
+import pg from "pg";
 
 export const QRCodesDB = {
     qrCodesTableName: "qr_codes",
-    db: null,
+    client: null,
     ready: null,
 
     create: async function ({
@@ -27,23 +22,31 @@ export const QRCodesDB = {
 
         const query = `
             INSERT INTO ${this.qrCodesTableName}
-            (shopDomain, title, productId, variantId, handle, discountId, discountCode, destination, scans)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+            (
+                shopDomain, 
+                title, 
+                productId, 
+                variantId, 
+                handle, 
+                discountId, 
+                discountCode, 
+                destination, 
+                scans
+            ) VALUES (
+                ${shopDomain}, 
+                ${title}, 
+                ${productId}, 
+                ${variantId}, 
+                ${handle}, 
+                ${discountId}, 
+                ${discountCode}, 
+                ${destination}, 
+                0
+            )
             RETURNING id;
         `;
 
-        const rawResults = await this.__query(query, [
-            shopDomain,
-            title,
-            productId,
-            variantId,
-            handle,
-            discountId,
-            discountCode,
-            destination,
-        ]);
-
-        return rawResults[0].id;
+        const rawResults = await this.__query(query);
     },
 
     update: async function (
@@ -62,27 +65,18 @@ export const QRCodesDB = {
         const query = `
             UPDATE ${this.qrCodesTableName}
             SET
-                title = ?,
-                productId = ?,
-                variantId = ?,
-                handle = ?,
-                discountId = ?,
-                discountCode = ?,
-                destination = ?
+                title = '${title}',
+                productId = '${productId}',
+                variantId = '${variantId}',
+                handle = '${handle}',
+                discountId = '${discountId}',
+                discountCode = '${discountCode}',
+                destination = '${destination}'
             WHERE
-                id = ?;
+                id = '${id}';
         `;
 
-        await this.__query(query, [
-            title,
-            productId,
-            variantId,
-            handle,
-            discountId,
-            discountCode,
-            destination,
-            id
-        ]);
+        await this.__query(query);
 
         return true;
     },
@@ -92,10 +86,10 @@ export const QRCodesDB = {
         
         const query = `
             SELECT * FROM ${this.qrCodesTableName}
-            WHERE shopDomain = ?;
+            WHERE shopDomain = '${shopDomain}';
         `;
 
-        const results = await this.__query(query, [shopDomain]);
+        const results = await this.__query(query);
 
         return results.map((qrcode) => this.__addImageUrl(qrcode));
     },
@@ -105,9 +99,9 @@ export const QRCodesDB = {
 
         const query = `
             SELECT * FROM ${this.qrCodesTableName}
-            WHERE id = ?;
+            WHERE id = '${id}';
         `;
-        const rows = await this.__query(query, [id]);
+        const rows = await this.__query(query);
 
         if (!Array.isArray(rows) || rows?.length !== 1) 
             return undefined;
@@ -120,10 +114,10 @@ export const QRCodesDB = {
         
         const query = `
             DELETE FROM ${this.qrCodesTableName}
-            WHERE id = ?;
+            WHERE id = '${id}';
         `;
 
-        await this.__query(query, [id]);
+        await this.__query(query);
 
         return true;
     },
@@ -154,36 +148,36 @@ export const QRCodesDB = {
 
     /* Private */
 
-    /*
-        Used to check whether to create the database.
-        Also used to make sure the database and table are set up before the server starts.
-    */
-    __hasQrCodesTable: async function () {
-        const query = `
-            SELECT name FROM sqlite_schema
-            WHERE
-                type = 'table' AND
-                name = ?;
-        `;
-        const rows = await this.__query(query, [this.qrCodesTableName]);
-
-        return rows.length === 1;
+    connectClient: async function() {
+        this.client.connect(function (err) {
+            if (err) throw err;
+            console.info("DB Connected!");
+        });
     },
 
-    /* Initializes the connection with the app's sqlite3 database */
+    disconnect: function () {
+        return this.client.end();
+    },
+
+    /* Initializes the connection with the app's PostgreSQL database */
     init: async function () {
         /* Initializes the connection to the database */
-        this.db = this.db ?? new sqlite3.Database(DEFAULT_DB_FILE);
-
-        const hasQrCodesTable = await this.__hasQrCodesTable();
-
-        if (hasQrCodesTable) {
-            this.ready = Promise.resolve();
-            /* Create the QR code table if it hasn't been created */
+        if (this.client) {
+            this.client = this.client;
         } else {
-            const query = `
-                CREATE TABLE ${this.qrCodesTableName} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+            this.client = new pg.Client({
+                user: process.env.PG_USER,
+                host: process.env.PG_HOST,
+                database: process.env.PG_DB,
+                password: process.env.PG_PASSWORD
+            });
+
+            await this.connectClient();
+        }
+        
+        const query = `
+            CREATE TABLE IF NOT EXISTS ${this.qrCodesTableName} (
+                id INTEGER PRIMARY KEY UNIQUE NOT NULL,
                 shopDomain VARCHAR(511) NOT NULL,
                 title VARCHAR(511) NOT NULL,
                 productId VARCHAR(255) NOT NULL,
@@ -194,25 +188,18 @@ export const QRCodesDB = {
                 destination VARCHAR(255) NOT NULL,
                 scans INTEGER,
                 createdAt DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime'))
-                )
-            `;
+            )
+        `;
 
-            /* Tell the various CRUD methods that they can execute */
-            this.ready = this.__query(query);
-        }
+        /* Tell the various CRUD methods that they can execute */
+        this.ready = this.__query(query);
     },
 
     /* Perform a query on the database. Used by the various CRUD methods. */
-    __query: function (sql, params = []) {
-        return new Promise((resolve, reject) => {
-            this.db.all(sql, params, (err, result) => {
-                if (err) {
-                reject(err);
-                return;
-                }
-                resolve(result);
-            });
-        });
+    __query: async function (sql) {
+        const result = await this.client.query(sql);
+
+        return result?.rows;
     },
 
     __addImageUrl: function (qrcode) {
@@ -232,11 +219,11 @@ export const QRCodesDB = {
     __increaseScanCount: async function (qrcode) {
         const query = `
             UPDATE ${this.qrCodesTableName}
-            SET scans = scans + 1
-            WHERE id = ?
+            SET scans = '${qrcode.scans + 1}'
+            WHERE id = '${qrcode.id}'
         `;
 
-        await this.__query(query, [qrcode.id]);
+        await this.__query(query);
     },
 
     __goToProductView: function (url, qrcode) {

@@ -23,8 +23,8 @@ export default function applyQrCodePublicEndpoints(app) {
                 .status(200)
                 .set("Content-Type", "image/png")
                 .set(
-                "Content-Disposition",
-                `inline; filename="qr_code_${qrcode.id}.png"`
+                    "Content-Disposition",
+                    `inline; filename="qr_code_${qrcode.id}.png"`
                 )
                 .send(await QRCode.toBuffer(destinationUrl));
         }

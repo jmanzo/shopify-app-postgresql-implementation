@@ -88,6 +88,7 @@ export default function applyQrCodeApiEndpoints(app) {
 
     app.post("/api/qrcodes", async (req, res) => {
         try {
+            // TODO: Verify that response is correct when create a new qrCode
             const id = await QRCodesDB.create({
                 ...(await parseQrCodeBody(req)),
                 /* Get the shop from the authorization header to prevent users from spoofing the data */
